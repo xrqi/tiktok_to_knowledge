@@ -1,14 +1,14 @@
 from flask import Flask, render_template, request, jsonify
-from knowledge_manager import KnowledgeManager
-from database_init import DatabaseManager
+from src.core.knowledge_manager import KnowledgeManager
+from src.core.database_init import DatabaseManager
 import asyncio
 import threading
 import uuid
 from datetime import datetime
-from video_acquisition import VideoAcquisition
-from video_processing import VideoProcessor
-from ai_analysis import AIAnalyzer, KnowledgeRefiner
-from knowledge_manager import KnowledgeManager as KM
+from src.core.video_acquisition import VideoAcquisition
+from src.core.video_processing import VideoProcessor
+from src.core.ai_analysis import AIAnalyzer, KnowledgeRefiner
+from src.core.knowledge_manager import KnowledgeManager as KM
 from pathlib import Path
 
 app = Flask(__name__)
@@ -235,7 +235,13 @@ def run_task_async(task_id, url):
 
 @app.route('/')
 def index():
+    """首页"""
     return render_template('index.html')
+
+@app.route('/graph')
+def graph():
+    """知识图谱页面"""
+    return render_template('graph.html')
 
 @app.route('/api/knowledge', methods=['GET'])
 def get_knowledge():
@@ -343,6 +349,143 @@ def get_task_status(task_id):
         return jsonify({'error': 'Task not found'}), 404
     
     return jsonify(task.to_dict())
+
+@app.route('/api/knowledge-graph', methods=['GET'])
+def get_knowledge_graph():
+    """获取知识图谱数据"""
+    try:
+        knowledge_list = km.get_all_knowledge(limit=1000)
+        
+        nodes = []
+        edges = []
+        node_id_map = {}
+        category_nodes = {}
+        tag_nodes = {}
+        video_nodes = {}
+        
+        for idx, kp in enumerate(knowledge_list):
+            kp_id = kp['id']
+            kp_title = kp['title'] or '无标题'
+            kp_category = kp['category'] or '未分类'
+            kp_tags = ensure_array(kp['tags'])
+            kp_video_id = kp.get('source_video_id')
+            kp_video_title = kp.get('video_title') or '未知视频'
+            
+            node_id_map[kp_id] = f'kp_{kp_id}'
+            
+            nodes.append({
+                'id': f'kp_{kp_id}',
+                'name': kp_title,
+                'category': '知识',
+                'symbolSize': 30,
+                'itemStyle': {'color': '#6366f1'},
+                'data': {
+                    'id': kp_id,
+                    'content': kp['content'] or '',
+                    'category': kp_category,
+                    'tags': kp_tags,
+                    'importance': kp['importance'],
+                    'created_at': kp['created_at']
+                }
+            })
+            
+            if kp_category not in category_nodes:
+                cat_id = f'cat_{kp_category}'
+                category_nodes[kp_category] = cat_id
+                nodes.append({
+                    'id': cat_id,
+                    'name': kp_category,
+                    'category': '分类',
+                    'symbolSize': 40,
+                    'itemStyle': {'color': '#8b5cf6'},
+                    'data': {'type': 'category'}
+                })
+            
+            edges.append({
+                'source': f'kp_{kp_id}',
+                'target': category_nodes[kp_category],
+                'name': '属于',
+                'lineStyle': {'color': '#8b5cf6', 'width': 2}
+            })
+            
+            for tag in kp_tags:
+                if tag not in tag_nodes:
+                    tag_id = f'tag_{tag}'
+                    tag_nodes[tag] = tag_id
+                    nodes.append({
+                        'id': tag_id,
+                        'name': tag,
+                        'category': '标签',
+                        'symbolSize': 25,
+                        'itemStyle': {'color': '#10b981'},
+                        'data': {'type': 'tag'}
+                    })
+                
+                edges.append({
+                    'source': f'kp_{kp_id}',
+                    'target': tag_nodes[tag],
+                    'name': '标签',
+                    'lineStyle': {'color': '#10b981', 'width': 1}
+                })
+            
+            if kp_video_id:
+                if kp_video_id not in video_nodes:
+                    vid_id = f'vid_{kp_video_id}'
+                    video_nodes[kp_video_id] = vid_id
+                    nodes.append({
+                        'id': vid_id,
+                        'name': kp_video_title,
+                        'category': '视频',
+                        'symbolSize': 35,
+                        'itemStyle': {'color': '#f59e0b'},
+                        'data': {'type': 'video', 'video_id': kp_video_id}
+                    })
+                
+                edges.append({
+                    'source': f'kp_{kp_id}',
+                    'target': video_nodes[kp_video_id],
+                    'name': '来源',
+                    'lineStyle': {'color': '#f59e0b', 'width': 2}
+                })
+        
+        for i, kp1 in enumerate(knowledge_list):
+            for j, kp2 in enumerate(knowledge_list):
+                if i >= j:
+                    continue
+                
+                tags1 = set(ensure_array(kp1['tags']))
+                tags2 = set(ensure_array(kp2['tags']))
+                common_tags = tags1 & tags2
+                
+                if common_tags:
+                    for tag in common_tags:
+                        edges.append({
+                            'source': f'kp_{kp1["id"]}',
+                            'target': f'kp_{kp2["id"]}',
+                            'name': f'共同标签: {tag}',
+                            'lineStyle': {'color': '#10b981', 'width': 1, 'type': 'dashed'}
+                        })
+        
+        return jsonify({
+            'nodes': nodes,
+            'edges': edges,
+            'categories': ['知识', '分类', '标签', '视频']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def ensure_array(tags):
+    """确保tags是列表格式"""
+    if isinstance(tags, list):
+        return tags
+    elif isinstance(tags, str):
+        try:
+            import json
+            return json.loads(tags)
+        except:
+            return [tag.strip() for tag in tags.split(',') if tag.strip()]
+    else:
+        return []
 
 if __name__ == '__main__':
     import argparse

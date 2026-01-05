@@ -123,6 +123,12 @@ if %errorlevel% neq 0 (
     pause
     goto MENU
 )
+echo.
+echo Tip: You can run the following commands in the container:
+echo   - python src/ui/web_app.py --help
+echo   - python src/ui/cli.py --help
+echo   - python src/ui/main_window.py (requires X11 forwarding)
+echo.
 pause
 goto MENU
 

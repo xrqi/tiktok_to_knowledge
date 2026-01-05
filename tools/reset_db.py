@@ -7,7 +7,7 @@ if os.path.exists('data/knowledge.db'):
     print("已删除旧数据库")
 
 # 重新初始化数据库
-from database_init import DatabaseManager
+from src.core.database_init import DatabaseManager
 db = DatabaseManager()
 db.init_database()
 

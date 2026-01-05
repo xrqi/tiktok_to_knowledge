@@ -1,11 +1,11 @@
 import openai
 import anthropic
 from typing import List, Dict, Optional, Any
-from config import config_manager
+from src.core.config import config_manager
 import logging
 import json
 import requests
-from video_processing import TextProcessor
+from src.core.video_processing import TextProcessor
 
 class AIAnalyzer:
     def __init__(self):

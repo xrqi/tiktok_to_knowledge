@@ -23,7 +23,8 @@ RUN mkdir -p /app/data /app/downloads /app/logs
 
 EXPOSE 5000
 
-ENV FLASK_APP=web_app.py
+ENV FLASK_APP=src/ui/web_app.py
 ENV FLASK_ENV=production
+ENV PYTHONPATH=/app
 
-CMD ["python", "web_app.py", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["python", "src/ui/web_app.py", "--host", "0.0.0.0", "--port", "5000"]

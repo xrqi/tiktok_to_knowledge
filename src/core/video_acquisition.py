@@ -9,7 +9,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 import logging
-from config import config_manager
+from src.core.config import config_manager
 
 class VideoAcquisition:
     def __init__(self):

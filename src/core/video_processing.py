@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Optional
 import logging
-from config import config_manager
+from src.core.config import config_manager
 from pydub import AudioSegment
 import re
 

@@ -11,14 +11,14 @@ services:
       - ./douyin_cookies.json:/app/douyin_cookies.json
       - ./static:/app/static
       - ./templates:/app/templates
-      - ./knowledge_manager.py:/app/knowledge_manager.py
-      - ./database_init.py:/app/database_init.py
+      - ./src:/app/src
     env_file:
       - .env
     environment:
       - FLASK_ENV=production
-      - FLASK_APP=web_app.py
+      - FLASK_APP=src/ui/web_app.py
       - AI_API_KEY=${OPENAI_API_KEY}
+      - PYTHONPATH=/app
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]

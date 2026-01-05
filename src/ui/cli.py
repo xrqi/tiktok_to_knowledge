@@ -1,11 +1,11 @@
 """命令行版本的短视频知识提炼工具"""
 import asyncio
 import argparse
-from video_acquisition import VideoAcquisition
-from video_processing import VideoProcessor
-from ai_analysis import AIAnalyzer, KnowledgeRefiner
-from knowledge_manager import KnowledgeManager
-from database_init import DatabaseManager
+from src.core.video_acquisition import VideoAcquisition
+from src.core.video_processing import VideoProcessor
+from src.core.ai_analysis import AIAnalyzer, KnowledgeRefiner
+from src.core.knowledge_manager import KnowledgeManager
+from src.core.database_init import DatabaseManager
 import logging
 
 logging.basicConfig(

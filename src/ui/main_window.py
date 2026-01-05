@@ -9,13 +9,13 @@ import json
 import os
 import logging
 
-from video_acquisition import VideoAcquisition
-from video_processing import VideoProcessor
-from ai_analysis import AIAnalyzer, KnowledgeRefiner
-from knowledge_manager import KnowledgeManager
-from database_init import DatabaseManager
-from config import config_manager
-from system_monitor import SystemMonitor, SystemMetrics
+from src.core.video_acquisition import VideoAcquisition
+from src.core.video_processing import VideoProcessor
+from src.core.ai_analysis import AIAnalyzer, KnowledgeRefiner
+from src.core.knowledge_manager import KnowledgeManager
+from src.core.database_init import DatabaseManager
+from src.core.config import config_manager
+from src.core.system_monitor import SystemMonitor, SystemMetrics
 
 # 配置日志
 logging.basicConfig(

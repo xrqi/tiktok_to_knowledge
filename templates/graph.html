@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识图谱 - 知识管理系统</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        #graph-container {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .graph-header {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .graph-header h1 {
+            margin: 0;
+            color: #1f2937;
+            font-size: 24px;
+        }
+        
+        .graph-header .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .legend {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .legend h3 {
+            margin: 0 0 10px 0;
+            color: #1f2937;
+            font-size: 16px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .node-detail {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .node-detail.active {
+            display: block;
+        }
+        
+        .node-detail h2 {
+            margin: 0 0 15px 0;
+            color: #1f2937;
+        }
+        
+        .node-detail p {
+            margin: 10px 0;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .node-detail .meta {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .node-detail .tag {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 12px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+            display: none;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 30px;
+            text-align: center;
+        }
+        
+        .close-btn:hover {
+            background: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="graph-header">
+        <h1>📊 知识图谱</h1>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="location.href='/'">返回首页</button>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <h3>图例</h3>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #6366f1;"></div>
+            <span>知识</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #8b5cf6;"></div>
+            <span>分类</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #10b981;"></div>
+            <span>标签</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f59e0b;"></div>
+            <span>视频</span>
+        </div>
+    </div>
+    
+    <div id="graph-container"></div>
+    
+    <div class="overlay" id="overlay" onclick="closeDetail()"></div>
+    <div class="node-detail" id="node-detail">
+        <button class="close-btn" onclick="closeDetail()">×</button>
+        <h2 id="detail-title"></h2>
+        <div id="detail-content"></div>
+    </div>
+    
+    <script>
+        let chart;
+        
+        async function loadGraphData() {
+            try {
+                const response = await fetch('/api/knowledge-graph');
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('加载知识图谱失败: ' + data.error);
+                    return;
+                }
+                
+                renderGraph(data);
+            } catch (error) {
+                console.error('加载知识图谱失败:', error);
+                alert('加载知识图谱失败: ' + error.message);
+            }
+        }
+        
+        function renderGraph(data) {
+            chart = echarts.init(document.getElementById('graph-container'));
+            
+            const option = {
+                tooltip: {
+                    formatter: function(params) {
+                        if (params.dataType === 'node') {
+                            return '<strong>' + params.name + '</strong><br/>类别: ' + params.data.category;
+                        } else {
+                            return params.name;
+                        }
+                    }
+                },
+                legend: {
+                    show: false
+                },
+                series: [{
+                    type: 'graph',
+                    layout: 'force',
+                    data: data.nodes.map(node => ({
+                        ...node,
+                        draggable: true
+                    })),
+                    links: data.edges,
+                    categories: data.categories.map(cat => ({name: cat})),
+                    roam: true,
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{b}'
+                    },
+                    lineStyle: {
+                        color: 'source',
+                        curveness: 0.3
+                    },
+                    emphasis: {
+                        focus: 'adjacency',
+                        lineStyle: {
+                            width: 4
+                        }
+                    },
+                    force: {
+                        repulsion: 300,
+                        edgeLength: [50, 200],
+                        gravity: 0.1
+                    }
+                }]
+            };
+            
+            chart.setOption(option);
+            
+            chart.on('click', function(params) {
+                if (params.dataType === 'node' && params.data.data) {
+                    showNodeDetail(params.data);
+                }
+            });
+            
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+        
+        function showNodeDetail(nodeData) {
+            const detail = document.getElementById('node-detail');
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('detail-title');
+            const content = document.getElementById('detail-content');
+            
+            title.textContent = nodeData.name;
+            
+            const data = nodeData.data;
+            
+            if (data.type === 'category') {
+                content.innerHTML = '<p>这是一个分类节点，包含该分类下的所有知识。</p>';
+            } else if (data.type === 'tag') {
+                content.innerHTML = '<p>这是一个标签节点，包含该标签的所有知识。</p>';
+            } else if (data.type === 'video') {
+                content.innerHTML = `
+                    <p><strong>视频标题:</strong> ${nodeData.name}</p>
+                    <p><strong>视频ID:</strong> ${data.video_id}</p>
+                    <p>这是知识来源的视频。</p>
+                `;
+            } else {
+                let tagsHtml = data.tags.map(tag => '<span class="tag">' + tag + '</span>').join('');
+                content.innerHTML = `
+                    <p><strong>内容:</strong></p>
+                    <p>${data.content}</p>
+                    <div class="meta">
+                        <p><strong>分类:</strong> ${data.category}</p>
+                        <p><strong>重要性:</strong> ${data.importance}</p>
+                        <p><strong>创建时间:</strong> ${data.created_at}</p>
+                        <p><strong>标签:</strong></p>
+                        <div>${tagsHtml}</div>
+                    </div>
+                `;
+            }
+            
+            detail.classList.add('active');
+            overlay.classList.add('active');
+        }
+        
+        function closeDetail() {
+            document.getElementById('node-detail').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+        
+        loadGraphData();
+    </script>
+</body>
+</html>
