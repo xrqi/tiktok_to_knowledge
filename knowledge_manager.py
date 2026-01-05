@@ -73,7 +73,7 @@ class KnowledgeManager:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT k.*, v.title as video_title, v.author as video_author
+            SELECT k.*, v.title as video_title, v.author as video_author, v.url as video_url
             FROM knowledge k
             LEFT JOIN videos v ON k.source_video_id = v.id
             WHERE k.id = ?
@@ -119,7 +119,7 @@ class KnowledgeManager:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT k.id, k.title, k.content, k.category, k.tags, k.importance, k.created_at, v.title as video_title
+            SELECT k.id, k.title, k.content, k.category, k.tags, k.importance, k.created_at, v.title as video_title, v.url as video_url
             FROM knowledge k
             LEFT JOIN videos v ON k.source_video_id = v.id
             ORDER BY k.created_at DESC

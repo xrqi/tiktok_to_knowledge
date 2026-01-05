@@ -326,7 +326,7 @@ class DatabaseManager:
         
         # 先尝试FTS全文搜索
         cursor.execute("""
-            SELECT k.*, t.title as video_title
+            SELECT k.*, t.title as video_title, t.url as video_url
             FROM knowledge k
             LEFT JOIN videos t ON k.source_video_id = t.id
             WHERE k.id IN (
@@ -343,7 +343,7 @@ class DatabaseManager:
         if not results:
             like_query = f"%{query}%"
             cursor.execute("""
-                SELECT k.*, t.title as video_title
+                SELECT k.*, t.title as video_title, t.url as video_url
                 FROM knowledge k
                 LEFT JOIN videos t ON k.source_video_id = t.id
                 WHERE k.title LIKE ? OR k.content LIKE ? OR k.tags LIKE ?

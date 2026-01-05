@@ -9,6 +9,10 @@ services:
       - ./logs:/app/logs
       - ./config.json:/app/config.json
       - ./douyin_cookies.json:/app/douyin_cookies.json
+      - ./static:/app/static
+      - ./templates:/app/templates
+      - ./knowledge_manager.py:/app/knowledge_manager.py
+      - ./database_init.py:/app/database_init.py
     env_file:
       - .env
     environment:

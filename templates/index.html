@@ -209,10 +209,11 @@
             }
 
             knowledgeList.forEach(kp => {
-                console.log('渲染知识条目:', kp.title);
+                console.log('渲染知识条目:', kp.title, 'video_url:', kp.video_url);
                 const card = document.createElement('div');
                 card.className = 'knowledge-card';
-                card.innerHTML = `
+                
+                const cardHTML = `
                     <div class="card-header">
                         <h3 class="card-title">${escapeHtml(kp.title || '无标题')}</h3>
                         <span class="card-category">${escapeHtml(kp.category || '未分类')}</span>
@@ -230,6 +231,9 @@
                         </div>
                     </div>
                     <div class="card-actions">
+                        <button onclick="openDouyinVideo('${escapeHtml(kp.video_url || '')}')" class="btn btn-small btn-douyin" title="在抖音中查看视频">
+                            <img src="/static/douyin-icon.png" alt="抖音" class="btn-icon">
+                        </button>
                         <button onclick="editKnowledge(${kp.id})" class="btn btn-small btn-edit">
                             <span>✏️ 编辑</span>
                         </button>
@@ -238,6 +242,9 @@
                         </button>
                     </div>
                 `;
+                
+                console.log('生成的HTML:', cardHTML);
+                card.innerHTML = cardHTML;
                 container.appendChild(card);
             });
             console.log('知识条目渲染完成');
@@ -288,6 +295,14 @@
                     }
                 });
             }
+        }
+
+        function openDouyinVideo(videoUrl) {
+            if (!videoUrl) {
+                alert('没有找到视频链接');
+                return;
+            }
+            window.open(videoUrl, '_blank');
         }
 
         function closeModal() {
