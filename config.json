@@ -1,0 +1,29 @@
+{
+  "video": {
+    "max_download_concurrent": 3,
+    "download_timeout": 60,
+    "video_quality": "720p",
+    "temp_dir": "./temp",
+    "download_dir": "./downloads"
+  },
+  "ai": {
+    "provider": "deepseek",
+    "model": "deepseek-chat",
+    "api_key": "sk-c6e80ce9dd414036afc8827868aa9a6f",
+    "temperature": 0.3,
+    "max_tokens": 4000,
+    "chunk_size": 1000
+  },
+  "database": {
+    "db_path": "./data/knowledge.db",
+    "backup_dir": "./data/backup",
+    "max_backup_files": 5
+  },
+  "app": {
+    "debug": false,
+    "log_level": "INFO",
+    "data_dir": "./data",
+    "max_workers": 4,
+    "ui_theme": "light"
+  }
+}

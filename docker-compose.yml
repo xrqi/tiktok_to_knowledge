@@ -1,0 +1,24 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./downloads:/app/downloads
+      - ./logs:/app/logs
+      - ./config.json:/app/config.json
+      - ./douyin_cookies.json:/app/douyin_cookies.json
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=web_app.py
+      - AI_API_KEY=${OPENAI_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

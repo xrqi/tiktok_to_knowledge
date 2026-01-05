@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库管理系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-title">
+                    <span class="header-icon">📚</span>
+                    <h1>知识库管理系统</h1>
+                </div>
+                <div class="stats" id="stats">
+                    <div class="stat-item">
+                        <div class="stat-icon">🎬</div>
+                        <div class="stat-content">
+                            <span class="stat-label">总视频数</span>
+                            <span class="stat-value" id="total-videos">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <span class="stat-label">已处理视频</span>
+                            <span class="stat-value" id="processed-videos">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">💡</div>
+                        <div class="stat-content">
+                            <span class="stat-label">知识条目</span>
+                            <span class="stat-value" id="total-knowledge">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('search')">
+                    <span class="tab-icon">🔍</span>
+                    搜索知识
+                </button>
+                <button class="tab-btn" onclick="switchTab('import')">
+                    <span class="tab-icon">📥</span>
+                    导入视频
+                </button>
+            </div>
+
+            <div class="tab-content">
+                <div id="search-tab" class="tab-pane active">
+                    <div class="search-wrapper">
+                        <input type="text" id="search-input" placeholder="搜索知识点..." class="search-input">
+                        <button onclick="searchKnowledge()" class="btn btn-primary">
+                            <span>搜索</span>
+                        </button>
+                        <button onclick="loadKnowledge()" class="btn btn-secondary">
+                            <span>重置</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="import-tab" class="tab-pane">
+                    <div class="import-wrapper">
+                        <input type="text" id="video-url-input" placeholder="输入抖音视频URL..." class="video-input">
+                        <button onclick="analyzeVideo()" class="btn btn-success" id="analyze-btn">
+                            <span>开始分析</span>
+                        </button>
+                    </div>
+                    <div id="progress-section" class="progress-section" style="display: none;">
+                        <div class="progress-info">
+                            <span class="progress-icon">⏳</span>
+                            <span class="progress-label">处理进度</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">准备中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="knowledge-list" id="knowledge-list">
+        </div>
+
+        <div class="pagination" id="pagination">
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>✏️ 编辑知识点</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label for="edit-title">📝 标题</label>
+                    <input type="text" id="edit-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-content">📄 内容</label>
+                    <textarea id="edit-content" rows="10" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-category">📂 分类</label>
+                    <input type="text" id="edit-category">
+                </div>
+                <div class="form-group">
+                    <label for="edit-tags">🏷️ 标签 (用逗号分隔)</label>
+                    <input type="text" id="edit-tags">
+                </div>
+                <div class="form-group">
+                    <label for="edit-importance">⭐ 重要性 (1-5)</label>
+                    <input type="number" id="edit-importance" min="1" max="5" value="3">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <span>💾 保存</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        <span>❌ 取消</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const perPage = 20;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadKnowledge();
+            loadStats();
+        });
+
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchKnowledge();
+            }
+        });
+
+        document.getElementById('video-url-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeVideo();
+            }
+        });
+
+        function switchTab(tabName) {
+            const searchTab = document.getElementById('search-tab');
+            const importTab = document.getElementById('import-tab');
+            const tabButtons = document.querySelectorAll('.tab-btn');
+
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+
+            if (tabName === 'search') {
+                searchTab.classList.add('active');
+                importTab.classList.remove('active');
+                tabButtons[0].classList.add('active');
+            } else {
+                importTab.classList.add('active');
+                searchTab.classList.remove('active');
+                tabButtons[1].classList.add('active');
+            }
+        }
+
+        function loadKnowledge(page = 1) {
+            currentPage = page;
+            const searchInput = document.getElementById('search-input').value;
+            const url = searchInput 
+                ? `/api/knowledge?search=${encodeURIComponent(searchInput)}&page=${page}&per_page=${perPage}`
+                : `/api/knowledge?page=${page}&per_page=${perPage}`;
+
+            console.log('正在加载知识条目:', url);
+            fetch(url)
+                .then(response => {
+                    console.log('API响应状态:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('API返回数据:', data);
+                    console.log('知识条目数量:', data.knowledge.length);
+                    renderKnowledge(data.knowledge);
+                    renderPagination(data.total_pages, data.page);
+                })
+                .catch(error => {
+                    console.error('加载知识条目失败:', error);
+                });
+        }
+
+        function searchKnowledge() {
+            loadKnowledge(1);
+        }
+
+        function renderKnowledge(knowledgeList) {
+            console.log('正在渲染知识条目，数量:', knowledgeList.length);
+            const container = document.getElementById('knowledge-list');
+            container.innerHTML = '';
+
+            if (knowledgeList.length === 0) {
+                container.innerHTML = '<p class="no-data">📭 暂无数据</p>';
+                return;
+            }
+
+            knowledgeList.forEach(kp => {
+                console.log('渲染知识条目:', kp.title);
+                const card = document.createElement('div');
+                card.className = 'knowledge-card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="card-title">${escapeHtml(kp.title || '无标题')}</h3>
+                        <span class="card-category">${escapeHtml(kp.category || '未分类')}</span>
+                    </div>
+                    <div class="card-content">
+                        <p>${escapeHtml(kp.content || '')}</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="tags">
+                            ${ensureArray(kp.tags).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                        </div>
+                        <div class="card-meta">
+                            <span class="importance importance-${kp.importance}">重要性: ${kp.importance}</span>
+                            <span class="date">${kp.created_at}</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button onclick="editKnowledge(${kp.id})" class="btn btn-small btn-edit">
+                            <span>✏️ 编辑</span>
+                        </button>
+                        <button onclick="deleteKnowledge(${kp.id})" class="btn btn-small btn-delete">
+                            <span>🗑️ 删除</span>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            console.log('知识条目渲染完成');
+        }
+
+        function renderPagination(totalPages, currentPage) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.textContent = i;
+                btn.onclick = () => loadKnowledge(i);
+                container.appendChild(btn);
+            }
+        }
+
+        function editKnowledge(id) {
+            fetch(`/api/knowledge/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('edit-id').value = data.id;
+                    document.getElementById('edit-title').value = data.title || '';
+                    document.getElementById('edit-content').value = data.content || '';
+                    document.getElementById('edit-category').value = data.category || '';
+                    document.getElementById('edit-tags').value = ensureArray(data.tags).join(', ');
+                    document.getElementById('edit-importance').value = data.importance || 3;
+                    document.getElementById('edit-modal').style.display = 'block';
+                });
+        }
+
+        function deleteKnowledge(id) {
+            if (confirm('确定要删除这个知识点吗？')) {
+                fetch(`/api/knowledge/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadKnowledge(currentPage);
+                        loadStats();
+                        alert('删除成功');
+                    } else {
+                        alert('删除失败');
+                    }
+                });
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+
+        document.getElementById('edit-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const tags = document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(t => t);
+
+            fetch(`/api/knowledge/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: document.getElementById('edit-title').value,
+                    content: document.getElementById('edit-content').value,
+                    category: document.getElementById('edit-category').value,
+                    tags: tags,
+                    importance: parseInt(document.getElementById('edit-importance').value)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal();
+                    loadKnowledge(currentPage);
+                    alert('保存成功');
+                } else {
+                    alert('保存失败');
+                }
+            });
+        });
+
+        function analyzeVideo() {
+            const url = document.getElementById('video-url-input').value.trim();
+            if (!url) {
+                alert('请输入视频URL');
+                return;
+            }
+
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳ 分析中...</span>';
+
+            document.getElementById('progress-section').style.display = 'block';
+            updateProgress(0, '正在启动任务...');
+
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    pollTaskStatus(data.task_id);
+                } else {
+                    throw new Error(data.error || '分析失败');
+                }
+            })
+            .catch(error => {
+                updateProgress(0, '分析失败: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '<span>🎥 开始分析</span>';
+                setTimeout(() => {
+                    document.getElementById('progress-section').style.display = 'none';
+                }, 3000);
+                alert('视频分析失败: ' + error.message);
+            });
+        }
+
+        function pollTaskStatus(taskId) {
+            const pollInterval = setInterval(() => {
+                fetch(`/api/task/${taskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            clearInterval(pollInterval);
+                            updateProgress(0, '任务错误: ' + data.error);
+                            const btn = document.getElementById('analyze-btn');
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>🎥 开始分析</span>';
+                            setTimeout(() => {
+                                document.getElementById('progress-section').style.display = 'none';
+                            }, 3000);
+                            return;
+                        }
+
+                        updateProgress(data.progress, data.message);
+
+                        if (data.status === 'completed') {
+                            clearInterval(pollInterval);
+                            setTimeout(() => {
+                                document.getElementById('progress-section').style.display = 'none';
+                                const btn = document.getElementById('analyze-btn');
+                                btn.disabled = false;
+                                btn.innerHTML = '<span>🎥 开始分析</span>';
+                                document.getElementById('video-url-input').value = '';
+                                loadKnowledge();
+                                loadStats();
+                                alert(`✅ 视频分析完成！提取了 ${data.result} 个知识点`);
+                            }, 1000);
+                        } else if (data.status === 'failed') {
+                            clearInterval(pollInterval);
+                            updateProgress(0, '任务失败: ' + data.error);
+                            const btn = document.getElementById('analyze-btn');
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>🎥 开始分析</span>';
+                            setTimeout(() => {
+                                document.getElementById('progress-section').style.display = 'none';
+                            }, 3000);
+                            alert('视频分析失败: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('轮询任务状态失败:', error);
+                    });
+            }, 1000);
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        function loadStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-videos').textContent = data.total_videos;
+                    document.getElementById('processed-videos').textContent = data.processed_videos;
+                    document.getElementById('total-knowledge').textContent = data.total_knowledge;
+                });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function ensureArray(value) {
+            if (Array.isArray(value)) {
+                return value;
+            }
+            if (typeof value === 'string' && value) {
+                try {
+                    return JSON.parse(value);
+                } catch (e) {
+                    return value.split(',').map(t => t.trim()).filter(t => t);
+                }
+            }
+            return [];
+        }
+    </script>
+</body>
+</html>
