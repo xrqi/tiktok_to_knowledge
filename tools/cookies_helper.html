@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抖音Cookies获取工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .steps {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .steps h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .steps ol {
+            padding-left: 20px;
+            color: #555;
+            line-height: 1.8;
+        }
+        
+        .steps li {
+            margin-bottom: 10px;
+        }
+        
+        .steps code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .input-section {
+            margin-top: 30px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .note strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍪 抖音Cookies获取工具</h1>
+        <p class="subtitle">手动获取并保存抖音登录cookies</p>
+        
+        <div class="steps">
+            <h2>📋 操作步骤</h2>
+            <ol>
+                <li>在浏览器中打开 <a href="https://www.douyin.com/" target="_blank">https://www.douyin.com/</a></li>
+                <li>完成登录操作（扫码或手机号）</li>
+                <li>按 <code>F12</code> 打开开发者工具</li>
+                <li>切换到 <code>Application</code> 标签（Chrome）或 <code>存储</code> 标签（Edge）</li>
+                <li>在左侧找到 <code>Cookies</code> → <code>https://www.douyin.com</code></li>
+                <li>点击任意cookie，然后按 <code>Ctrl+A</code> 全选</li>
+                <li>按 <code>Ctrl+C</code> 复制所有cookies</li>
+                <li>将复制的内容粘贴到下方的文本框中</li>
+            </ol>
+        </div>
+        
+        <div class="input-section">
+            <label for="cookiesInput">粘贴Cookies（JSON格式）：</label>
+            <textarea id="cookiesInput" placeholder='[
+  {
+    "name": "cookie_name",
+    "value": "cookie_value",
+    "domain": ".douyin.com",
+    ...
+  }
+]'></textarea>
+            
+            <div class="buttons">
+                <button class="btn-primary" onclick="saveCookies()">💾 保存Cookies</button>
+                <button class="btn-secondary" onclick="clearInput()">🗑️ 清空</button>
+            </div>
+        </div>
+        
+        <div id="result" class="result"></div>
+        
+        <div class="note">
+            <strong>⚠️ 注意事项：</strong>
+            Cookies包含敏感信息，请妥善保管。不要将cookies分享给他人。Cookies可能会过期，如果遇到"Fresh cookies are needed"错误，请重新获取。
+        </div>
+    </div>
+    
+    <script>
+        function saveCookies() {
+            const input = document.getElementById('cookiesInput').value.trim();
+            const result = document.getElementById('result');
+            
+            if (!input) {
+                result.className = 'result error';
+                result.style.display = 'block';
+                result.innerHTML = '❌ 请先粘贴cookies内容！';
+                return;
+            }
+            
+            try {
+                const cookies = JSON.parse(input);
+                
+                if (!Array.isArray(cookies)) {
+                    throw new Error('Cookies必须是数组格式');
+                }
+                
+                // 检查关键cookies
+                const requiredCookies = ['sessionid', 'sessionid_ss', 'sid_guard', 'passport_csrf_token'];
+                const foundCookies = requiredCookies.filter(name => 
+                    cookies.some(cookie => cookie.name === name)
+                );
+                
+                // 创建下载
+                const blob = new Blob([JSON.stringify(cookies, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'douyin_cookies.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // 显示结果
+                result.className = 'result success';
+                result.style.display = 'block';
+                let message = '✅ Cookies已保存为 douyin_cookies.json 文件！<br><br>';
+                message += `共 ${cookies.length} 个cookies<br>`;
+                
+                if (foundCookies.length > 0) {
+                    message += `✓ 找到关键登录cookies: ${foundCookies.join(', ')}`;
+                } else {
+                    message += '⚠️ 未找到关键登录cookies，可能需要重新登录';
+                }
+                
+                result.innerHTML = message;
+                
+            } catch (error) {
+                result.className = 'result error';
+                result.style.display = 'block';
+                result.innerHTML = '❌ JSON格式错误：' + error.message + '<br><br>请确保粘贴的是正确的JSON格式的cookies。';
+            }
+        }
+        
+        function clearInput() {
+            document.getElementById('cookiesInput').value = '';
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        // 自动加载已保存的cookies（如果存在）
+        window.onload = function() {
+            const savedCookies = localStorage.getItem('douyin_cookies_backup');
+            if (savedCookies) {
+                document.getElementById('cookiesInput').value = savedCookies;
+            }
+        };
+        
+        // 自动备份到localStorage
+        document.getElementById('cookiesInput').addEventListener('input', function() {
+            localStorage.setItem('douyin_cookies_backup', this.value);
+        });
+    </script>
+</body>
+</html>

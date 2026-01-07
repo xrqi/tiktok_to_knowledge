@@ -102,6 +102,22 @@ class DatabaseManager:
             )
         """)
         
+        # 创建用户访问记录表
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_access_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address TEXT NOT NULL,
+                user_agent TEXT,
+                device_type TEXT,
+                os_name TEXT,
+                browser_name TEXT,
+                access_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                video_url TEXT,
+                task_id TEXT,
+                status TEXT DEFAULT 'started'
+            )
+        """)
+        
         # 创建索引以提高查询性能
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_platform ON videos(platform)")
@@ -109,6 +125,8 @@ class DatabaseManager:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_importance ON knowledge(importance)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_next_review ON knowledge(next_review_date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_transcripts_video_id ON transcripts(video_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_access_logs_ip ON user_access_logs(ip_address)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_access_logs_time ON user_access_logs(access_time)")
         
         conn.commit()
         conn.close()
@@ -509,6 +527,72 @@ class DatabaseManager:
             'pending_reviews': pending_reviews,
             'category_stats': category_stats
         }
+    
+    def insert_user_access_log(self, ip_address: str, user_agent: str = None, 
+                               device_type: str = None, os_name: str = None, 
+                               browser_name: str = None, video_url: str = None, 
+                               task_id: str = None, status: str = 'started') -> int:
+        """插入用户访问记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO user_access_logs (ip_address, user_agent, device_type, os_name, browser_name, video_url, task_id, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (ip_address, user_agent, device_type, os_name, browser_name, video_url, task_id, status))
+        
+        log_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return log_id
+    
+    def update_user_access_log_status(self, log_id: int, status: str):
+        """更新用户访问记录状态"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE user_access_logs 
+            SET status = ? 
+            WHERE id = ?
+        """, (status, log_id))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_user_access_logs(self, limit: int = 100, offset: int = 0) -> List[sqlite3.Row]:
+        """获取用户访问记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT * FROM user_access_logs
+            ORDER BY access_time DESC
+            LIMIT ? OFFSET ?
+        """, (limit, offset))
+        
+        results = cursor.fetchall()
+        conn.close()
+        
+        return results
+    
+    def get_user_access_logs_by_ip(self, ip_address: str, limit: int = 100) -> List[sqlite3.Row]:
+        """根据IP地址获取用户访问记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT * FROM user_access_logs
+            WHERE ip_address = ?
+            ORDER BY access_time DESC
+            LIMIT ?
+        """, (ip_address, limit))
+        
+        results = cursor.fetchall()
+        conn.close()
+        
+        return results
 
 if __name__ == "__main__":
     # 初始化数据库

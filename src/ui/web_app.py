@@ -9,9 +9,16 @@ from src.core.video_acquisition import VideoAcquisition
 from src.core.video_processing import VideoProcessor
 from src.core.ai_analysis import AIAnalyzer, KnowledgeRefiner
 from src.core.knowledge_manager import KnowledgeManager as KM
+from src.utils.user_agent_parser import UserAgentParser
 from pathlib import Path
 
-app = Flask(__name__)
+# 获取项目根目录
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# 配置Flask应用，指定模板和静态文件目录
+app = Flask(__name__, 
+            template_folder=str(BASE_DIR / 'templates'),
+            static_folder=str(BASE_DIR / 'static'))
 
 km = KnowledgeManager()
 db = DatabaseManager()
@@ -30,6 +37,7 @@ class TaskProgress:
         self.result = None
         self.error = None
         self.created_at = datetime.now()
+        self.access_log_id = None
     
     def update(self, progress, message):
         self.progress = progress
@@ -225,6 +233,10 @@ def run_task_async(task_id, url):
         try:
             result = loop.run_until_complete(process_video_url(url, progress_callback))
             task.set_result(result)
+            
+            # 更新访问记录状态为完成
+            if task.access_log_id:
+                db.update_user_access_log_status(task.access_log_id, 'completed')
         finally:
             loop.close()
     except Exception as e:
@@ -232,6 +244,10 @@ def run_task_async(task_id, url):
         print(f"任务 {task_id} 失败: {e}")
         import traceback
         traceback.print_exc()
+        
+        # 更新访问记录状态为失败
+        if task.access_log_id:
+            db.update_user_access_log_status(task.access_log_id, 'failed')
 
 @app.route('/')
 def index():
@@ -248,11 +264,47 @@ def get_knowledge():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     search = request.args.get('search', '')
+    tag = request.args.get('tag', '')
+    time_sort = request.args.get('time_sort', 'desc')
+    importance_sort = request.args.get('importance_sort', '')
     
     if search:
         knowledge_list = km.search_knowledge(search)
     else:
         knowledge_list = km.get_all_knowledge()
+    
+    # 标签筛选
+    if tag:
+        knowledge_list = [k for k in knowledge_list if tag in k.get('tags', [])]
+    
+    # 时间排序
+    if time_sort == 'desc':
+        knowledge_list.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    elif time_sort == 'asc':
+        knowledge_list.sort(key=lambda x: x.get('created_at', ''))
+    
+    # 重要性排序
+    if importance_sort == 'desc':
+        knowledge_list.sort(key=lambda x: x.get('importance', 0), reverse=True)
+    elif importance_sort == 'asc':
+        knowledge_list.sort(key=lambda x: x.get('importance', 0))
+    
+    # 为每个知识点添加相同视频URL的相关ID
+    video_url_map = {}
+    for k in knowledge_list:
+        video_url = k.get('video_url')
+        if video_url:
+            if video_url not in video_url_map:
+                video_url_map[video_url] = []
+            video_url_map[video_url].append(k['id'])
+    
+    for k in knowledge_list:
+        video_url = k.get('video_url')
+        if video_url and video_url in video_url_map:
+            related_ids = [id for id in video_url_map[video_url] if id != k['id']]
+            k['related_ids'] = related_ids
+        else:
+            k['related_ids'] = []
     
     total = len(knowledge_list)
     start = (page - 1) * per_page
@@ -265,6 +317,27 @@ def get_knowledge():
         'page': page,
         'per_page': per_page,
         'total_pages': (total + per_page - 1) // per_page
+    })
+
+@app.route('/api/tags', methods=['GET'])
+def get_tags():
+    knowledge_list = km.get_all_knowledge()
+    all_tags = set()
+    for k in knowledge_list:
+        tags = k.get('tags', [])
+        if isinstance(tags, list):
+            all_tags.update(tags)
+        elif isinstance(tags, str):
+            try:
+                import json
+                parsed_tags = json.loads(tags)
+                if isinstance(parsed_tags, list):
+                    all_tags.update(parsed_tags)
+            except:
+                pass
+    
+    return jsonify({
+        'tags': sorted(list(all_tags))
     })
 
 @app.route('/api/knowledge/<int:knowledge_id>', methods=['GET'])
@@ -302,6 +375,43 @@ def get_stats():
     stats = km.get_knowledge_statistics()
     return jsonify(stats)
 
+@app.route('/api/access-logs', methods=['GET'])
+def get_access_logs():
+    """获取用户访问记录"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        ip_filter = request.args.get('ip', '')
+        
+        offset = (page - 1) * per_page
+        
+        if ip_filter:
+            logs = db.get_user_access_logs_by_ip(ip_filter, limit=per_page)
+        else:
+            logs = db.get_user_access_logs(limit=per_page, offset=offset)
+        
+        # 转换为字典列表
+        log_list = []
+        for log in logs:
+            log_dict = dict(log)
+            # 将 SQLite 的 datetime 字符串转换为 ISO 格式
+            if 'access_time' in log_dict:
+                log_dict['access_time'] = log_dict['access_time']
+            log_list.append(log_dict)
+        
+        # 获取总数（简化处理，实际应该查询数据库获取总数）
+        total = len(log_list)
+        
+        return jsonify({
+            'logs': log_list,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': (total + per_page - 1) // per_page
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_video():
     """分析视频并导入知识库（异步）"""
@@ -322,12 +432,32 @@ def analyze_video():
         if not url or not url.startswith('http'):
             return jsonify({'success': False, 'error': '无效的URL格式'}), 400
         
+        # 获取用户信息
+        ip_address = UserAgentParser.get_client_ip(request)
+        user_agent = request.headers.get('User-Agent', '')
+        user_info = UserAgentParser.parse_user_agent(user_agent)
+        
         # 创建新任务
         task_id = str(uuid.uuid4())
         task = TaskProgress(task_id)
         
         with task_lock:
             tasks[task_id] = task
+        
+        # 记录用户访问信息到数据库
+        access_log_id = db.insert_user_access_log(
+            ip_address=ip_address,
+            user_agent=user_agent,
+            device_type=user_info['device_type'],
+            os_name=user_info['os_name'],
+            browser_name=user_info['browser_name'],
+            video_url=url,
+            task_id=task_id,
+            status='started'
+        )
+        
+        # 将访问记录ID关联到任务
+        task.access_log_id = access_log_id
         
         # 在后台线程中运行任务
         thread = threading.Thread(target=run_task_async, args=(task_id, url))
@@ -349,6 +479,41 @@ def get_task_status(task_id):
         return jsonify({'error': 'Task not found'}), 404
     
     return jsonify(task.to_dict())
+
+@app.route('/api/refresh-cookies', methods=['POST'])
+def refresh_cookies():
+    """刷新抖音cookies"""
+    import subprocess
+    import os
+    import json
+    
+    try:
+        # 运行manual_login_playwright.py脚本
+        tools_dir = BASE_DIR / 'tools'
+        script_path = tools_dir / 'manual_login_playwright.py'
+        
+        print("正在启动cookies刷新流程...")
+        
+        # 在后台运行脚本
+        process = subprocess.Popen(
+            ['python', str(script_path)],
+            cwd=str(tools_dir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Cookies刷新流程已启动，请在打开的浏览器中完成登录',
+            'process_id': process.pid
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'启动cookies刷新失败: {str(e)}'
+        }), 500
 
 @app.route('/api/knowledge-graph', methods=['GET'])
 def get_knowledge_graph():

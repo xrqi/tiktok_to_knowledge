@@ -12,6 +12,10 @@ playwright>=1.40.0
 # Web应用
 Flask>=2.0.0
 
+# 浏览器自动化（用于登录获取cookies）
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
 # 数据库
 # sqlite3 is part of Python standard library
 

@@ -4,78 +4,1077 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>知识库管理系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --accent: #4cc9f0;
+            --success: #4ade80;
+            --warning: #facc15;
+            --danger: #f87171;
+            --light: #f8fafc;
+            --dark: #0f172a;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --card-bg: #ffffff;
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            color: var(--gray-800);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(160deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .sidebar-title .icon {
+            font-size: 1.8rem;
+        }
+
+        .nav-menu {
+            padding: 0 16px;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-link.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .nav-link.loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .nav-link .icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .main-header {
+            height: var(--header-height);
+            background: white;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+            margin-right: 6px;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 32px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 1rem;
+            color: var(--gray-600);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: var(--gray-100);
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:hover {
+            border-color: var(--primary);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #22c55e;
+        }
+
+        /* Import Section */
+        .import-section {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+        }
+
+        .import-form {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .import-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+
+        .import-input:focus {
+            outline: none;
+            border-color: var(--success);
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.1);
+        }
+
+        /* Progress Section */
+        .progress-section {
+            background: var(--gray-100);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            margin-top: 24px;
+        }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .progress-icon {
+            font-size: 1.5rem;
+        }
+
+        .progress-label {
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        /* Knowledge Grid */
+        .knowledge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .knowledge-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .knowledge-card.highlighted {
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(67, 97, 238, 0.5);
+            transform: scale(1.02);
+        }
+
+        .knowledge-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .card-header-left {
+            flex: 1;
+        }
+
+        .card-id {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .card-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--gray-100);
+            color: var(--gray-600);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .card-content {
+            color: var(--gray-700);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+
+        .related-ids {
+            background: var(--gray-100);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .related-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.85rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .related-ids-list {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .related-id {
+            display: inline-block;
+            padding: 4px 10px;
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .related-id:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            background: var(--gray-100);
+            color: var(--gray-600);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .importance {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .importance-1 { color: var(--gray-500); }
+        .importance-2 { color: var(--warning); }
+        .importance-3 { color: var(--success); }
+        .importance-4 { color: var(--primary); }
+        .importance-5 { color: var(--danger); }
+
+        .date {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-edit {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .btn-douyin {
+            background: #fe2c55;
+            color: white;
+        }
+
+        .btn-douyin:hover {
+            background: #e0254a;
+        }
+
+        .btn-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .page-btn {
+            padding: 10px 16px;
+            border: 2px solid var(--gray-200);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 32px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--gray-400);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: var(--gray-600);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        /* No Data */
+        .no-data {
+            text-align: center;
+            padding: 48px;
+            color: var(--gray-500);
+            font-size: 1.2rem;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+
+        .toast.success {
+            border-left-color: var(--success);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 0.95rem;
+            color: var(--gray-800);
+            font-weight: 500;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hiding {
+                animation: slideOut 0.3s ease;
+            }
+
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                min-width: auto;
+                padding: 12px 16px;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding: 16px 0;
+            }
+
+            .sidebar-header {
+                padding: 0 12px 16px;
+            }
+
+            .sidebar-title {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-title .icon {
+                font-size: 1.5rem;
+            }
+
+            .nav-menu {
+                padding: 0 8px;
+            }
+
+            .nav-link {
+                padding: 12px;
+                justify-content: center;
+            }
+
+            .nav-link span:not(.icon) {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-header {
+                padding: 0 16px;
+            }
+
+            .header-stats {
+                display: none;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .search-section,
+            .import-section {
+                padding: 24px;
+            }
+
+            .search-form,
+            .import-form {
+                flex-direction: column;
+            }
+
+            .knowledge-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .card-id {
+                align-self: flex-end;
+            }
+
+            .filter-section {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .filter-select {
+                flex: 1;
+            }
+
+            .card-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .card-meta {
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-content {
+                margin: 10% auto;
+                padding: 24px;
+                width: 95%;
+            }
+
+            .search-form,
+            .import-form {
+                gap: 12px;
+            }
+
+            .btn {
+                padding: 12px 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="header-title">
-                    <span class="header-icon">📚</span>
-                    <h1>知识库管理系统</h1>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <span class="icon">📚</span>
+                <span>知识库</span>
+            </div>
+        </div>
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="#" class="nav-link active" onclick="switchTab('search'); return false;">
+                    <span class="icon">🔍</span>
+                    <span>搜索知识</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('import'); return false;">
+                    <span class="icon">📥</span>
+                    <span>导入视频</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/graph" class="nav-link">
+                    <span class="icon">📊</span>
+                    <span>知识图谱</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="refreshCookies(); return false;">
+                    <span class="icon">🔄</span>
+                    <span>刷新Cookies</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-stats">
+                <div class="stat-card">
+                    <span class="stat-label">总视频数</span>
+                    <div class="stat-value">
+                        <span class="stat-icon">🎬</span>
+                        <span id="total-videos">0</span>
+                    </div>
                 </div>
-                <div class="stats" id="stats">
-                    <div class="stat-item">
-                        <div class="stat-icon">🎬</div>
-                        <div class="stat-content">
-                            <span class="stat-label">总视频数</span>
-                            <span class="stat-value" id="total-videos">0</span>
-                        </div>
+                <div class="stat-card">
+                    <span class="stat-label">已处理视频</span>
+                    <div class="stat-value">
+                        <span class="stat-icon">✅</span>
+                        <span id="processed-videos">0</span>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-content">
-                            <span class="stat-label">已处理视频</span>
-                            <span class="stat-value" id="processed-videos">0</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">💡</div>
-                        <div class="stat-content">
-                            <span class="stat-label">知识条目</span>
-                            <span class="stat-value" id="total-knowledge">0</span>
-                        </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">知识条目</span>
+                    <div class="stat-value">
+                        <span class="stat-icon">💡</span>
+                        <span id="total-knowledge">0</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('search')">
-                    <span class="tab-icon">🔍</span>
-                    搜索知识
-                </button>
-                <button class="tab-btn" onclick="switchTab('import')">
-                    <span class="tab-icon">📥</span>
-                    导入视频
-                </button>
-                <button class="tab-btn" onclick="location.href='/graph'">
-                    <span class="tab-icon">📊</span>
-                    知识图谱
-                </button>
-            </div>
-
-            <div class="tab-content">
-                <div id="search-tab" class="tab-pane active">
-                    <div class="search-wrapper">
-                        <input type="text" id="search-input" placeholder="搜索知识点..." class="search-input">
-                        <button onclick="searchKnowledge()" class="btn btn-primary">
-                            <span>搜索</span>
-                        </button>
-                        <button onclick="loadKnowledge()" class="btn btn-secondary">
-                            <span>重置</span>
-                        </button>
-                    </div>
+        <!-- Content -->
+        <main class="content">
+            <!-- Search Tab -->
+            <div id="search-tab" class="tab-content active">
+                <div class="page-header">
+                    <h1 class="page-title">搜索知识</h1>
+                    <p class="page-subtitle">搜索和浏览您的知识库内容</p>
                 </div>
 
-                <div id="import-tab" class="tab-pane">
-                    <div class="import-wrapper">
-                        <input type="text" id="video-url-input" placeholder="输入抖音视频URL..." class="video-input">
-                        <button onclick="analyzeVideo()" class="btn btn-success" id="analyze-btn">
+                <section class="search-section">
+                    <form class="search-form">
+                        <input type="text" id="search-input" placeholder="输入关键词搜索..." class="search-input">
+                        <button type="button" onclick="searchKnowledge()" class="btn btn-primary">
+                            <span>搜索</span>
+                        </button>
+                        <button type="button" onclick="loadKnowledge()" class="btn btn-secondary">
+                            <span>重置</span>
+                        </button>
+                    </form>
+                    
+                    <div class="filter-section">
+                        <div class="filter-group">
+                            <label class="filter-label">🏷️ 标签筛选:</label>
+                            <select id="tag-filter" class="filter-select" onchange="applyFilters()">
+                                <option value="">全部标签</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">⏰ 时间排序:</label>
+                            <select id="time-sort" class="filter-select" onchange="applyFilters()">
+                                <option value="desc">最新优先</option>
+                                <option value="asc">最早优先</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">⭐ 重要性排序:</label>
+                            <select id="importance-sort" class="filter-select" onchange="applyFilters()">
+                                <option value="">不排序</option>
+                                <option value="desc">高到低</option>
+                                <option value="asc">低到高</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="knowledge-grid" id="knowledge-list">
+                    <p class="no-data">📭 暂无数据</p>
+                </div>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+
+            <!-- Import Tab -->
+            <div id="import-tab" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">导入视频</h1>
+                    <p class="page-subtitle">从抖音导入视频并提取知识</p>
+                </div>
+
+                <section class="import-section">
+                    <form class="import-form">
+                        <input type="text" id="video-url-input" placeholder="输入抖音视频URL..." class="import-input">
+                        <button type="button" onclick="analyzeVideo()" class="btn btn-success" id="analyze-btn">
                             <span>开始分析</span>
                         </button>
-                    </div>
+                    </form>
                     <div id="progress-section" class="progress-section" style="display: none;">
                         <div class="progress-info">
                             <span class="progress-icon">⏳</span>
@@ -86,21 +1085,16 @@
                         </div>
                         <div class="progress-text" id="progress-text">准备中...</div>
                     </div>
-                </div>
+                </section>
             </div>
-        </div>
-
-        <div class="knowledge-list" id="knowledge-list">
-        </div>
-
-        <div class="pagination" id="pagination">
-        </div>
+        </main>
     </div>
 
+    <!-- Edit Modal -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h2>✏️ 编辑知识点</h2>
+            <h2 style="margin-bottom: 24px;">✏️ 编辑知识点</h2>
             <form id="edit-form">
                 <input type="hidden" id="edit-id">
                 <div class="form-group">
@@ -109,7 +1103,7 @@
                 </div>
                 <div class="form-group">
                     <label for="edit-content">📄 内容</label>
-                    <textarea id="edit-content" rows="10" required></textarea>
+                    <textarea id="edit-content" rows="6" required></textarea>
                 </div>
                 <div class="form-group">
                     <label for="edit-category">📂 分类</label>
@@ -124,11 +1118,11 @@
                     <input type="number" id="edit-importance" min="1" max="5" value="3">
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <span>💾 保存</span>
-                    </button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">
                         <span>❌ 取消</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <span>✅ 保存</span>
                     </button>
                 </div>
             </form>
@@ -138,11 +1132,39 @@
     <script>
         let currentPage = 1;
         const perPage = 20;
+        let allTags = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             loadKnowledge();
             loadStats();
+            loadTags();
         });
+
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'warning') icon = '⚠️';
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icon}</span>
+                <span class="toast-message">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, duration);
+        }
 
         document.getElementById('search-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -159,37 +1181,51 @@
         function switchTab(tabName) {
             const searchTab = document.getElementById('search-tab');
             const importTab = document.getElementById('import-tab');
-            const tabButtons = document.querySelectorAll('.tab-btn');
+            const navLinks = document.querySelectorAll('.nav-link');
 
-            tabButtons.forEach(btn => btn.classList.remove('active'));
+            navLinks.forEach(link => link.classList.remove('active'));
 
             if (tabName === 'search') {
                 searchTab.classList.add('active');
                 importTab.classList.remove('active');
-                tabButtons[0].classList.add('active');
-            } else {
+                navLinks[0].classList.add('active');
+            } else if (tabName === 'import') {
                 importTab.classList.add('active');
                 searchTab.classList.remove('active');
-                tabButtons[1].classList.add('active');
+                navLinks[1].classList.add('active');
             }
         }
 
         function loadKnowledge(page = 1) {
             currentPage = page;
             const searchInput = document.getElementById('search-input').value;
-            const url = searchInput 
-                ? `/api/knowledge?search=${encodeURIComponent(searchInput)}&page=${page}&per_page=${perPage}`
-                : `/api/knowledge?page=${page}&per_page=${perPage}`;
+            const tagFilter = document.getElementById('tag-filter').value;
+            const timeSort = document.getElementById('time-sort').value;
+            const importanceSort = document.getElementById('importance-sort').value;
+            
+            let url = `/api/knowledge?page=${page}&per_page=${perPage}`;
+            const params = [];
+            
+            if (searchInput) {
+                params.push(`search=${encodeURIComponent(searchInput)}`);
+            }
+            if (tagFilter) {
+                params.push(`tag=${encodeURIComponent(tagFilter)}`);
+            }
+            if (timeSort) {
+                params.push(`time_sort=${timeSort}`);
+            }
+            if (importanceSort) {
+                params.push(`importance_sort=${importanceSort}`);
+            }
+            
+            if (params.length > 0) {
+                url += '&' + params.join('&');
+            }
 
-            console.log('正在加载知识条目:', url);
             fetch(url)
-                .then(response => {
-                    console.log('API响应状态:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('API返回数据:', data);
-                    console.log('知识条目数量:', data.knowledge.length);
                     renderKnowledge(data.knowledge);
                     renderPagination(data.total_pages, data.page);
                 })
@@ -202,8 +1238,27 @@
             loadKnowledge(1);
         }
 
+        function applyFilters() {
+            loadKnowledge(1);
+        }
+
+        function loadTags() {
+            fetch('/api/tags')
+                .then(response => response.json())
+                .then(data => {
+                    allTags = data.tags || [];
+                    const tagFilter = document.getElementById('tag-filter');
+                    tagFilter.innerHTML = '<option value="">全部标签</option>';
+                    allTags.forEach(tag => {
+                        tagFilter.innerHTML += `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`;
+                    });
+                })
+                .catch(error => {
+                    console.error('加载标签失败:', error);
+                });
+        }
+
         function renderKnowledge(knowledgeList) {
-            console.log('正在渲染知识条目，数量:', knowledgeList.length);
             const container = document.getElementById('knowledge-list');
             container.innerHTML = '';
 
@@ -213,45 +1268,58 @@
             }
 
             knowledgeList.forEach(kp => {
-                console.log('渲染知识条目:', kp.title, 'video_url:', kp.video_url);
                 const card = document.createElement('div');
                 card.className = 'knowledge-card';
                 
+                let relatedIdsHTML = '';
+                if (kp.related_ids && kp.related_ids.length > 0) {
+                    relatedIdsHTML = `
+                        <div class="related-ids">
+                            <span class="related-label">📹 相同视频的知识ID:</span>
+                            <div class="related-ids-list">
+                                ${kp.related_ids.map(id => `<span class="related-id" onclick="highlightCard(${id})" title="点击高亮对应的知识卡片">${id}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 const cardHTML = `
                     <div class="card-header">
-                        <h3 class="card-title">${escapeHtml(kp.title || '无标题')}</h3>
-                        <span class="card-category">${escapeHtml(kp.category || '未分类')}</span>
+                        <div class="card-header-left">
+                            <h3 class="card-title">${escapeHtml(kp.title || '无标题')}</h3>
+                            <span class="card-category">${escapeHtml(kp.category || '未分类')}</span>
+                        </div>
+                        <div class="card-id">ID: ${kp.id}</div>
                     </div>
                     <div class="card-content">
                         <p>${escapeHtml(kp.content || '')}</p>
                     </div>
+                    ${relatedIdsHTML}
                     <div class="card-footer">
                         <div class="tags">
                             ${ensureArray(kp.tags).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
                         </div>
                         <div class="card-meta">
                             <span class="importance importance-${kp.importance}">重要性: ${kp.importance}</span>
-                            <span class="date">${kp.created_at}</span>
+                            <span class="date">${formatDate(kp.created_at)}</span>
                         </div>
                     </div>
                     <div class="card-actions">
-                        <button onclick="openDouyinVideo('${escapeHtml(kp.video_url || '')}')" class="btn btn-small btn-douyin" title="在抖音中查看视频">
-                            <img src="/static/douyin-icon.png" alt="抖音" class="btn-icon">
+                        <button onclick="openDouyinVideo('${escapeHtml(kp.video_url || '')}')" class="btn-small btn-douyin" title="在抖音中查看视频">
+                            <span>抖音</span>
                         </button>
-                        <button onclick="editKnowledge(${kp.id})" class="btn btn-small btn-edit">
-                            <span>✏️ 编辑</span>
+                        <button onclick="editKnowledge(${kp.id})" class="btn-small btn-edit">
+                            <span>编辑</span>
                         </button>
-                        <button onclick="deleteKnowledge(${kp.id})" class="btn btn-small btn-delete">
-                            <span>🗑️ 删除</span>
+                        <button onclick="deleteKnowledge(${kp.id})" class="btn-small btn-delete">
+                            <span>删除</span>
                         </button>
                     </div>
                 `;
                 
-                console.log('生成的HTML:', cardHTML);
                 card.innerHTML = cardHTML;
                 container.appendChild(card);
             });
-            console.log('知识条目渲染完成');
         }
 
         function renderPagination(totalPages, currentPage) {
@@ -269,6 +1337,36 @@
             }
         }
 
+        function highlightCard(knowledgeId) {
+            const cards = document.querySelectorAll('.knowledge-card');
+            
+            cards.forEach(card => {
+                card.classList.remove('highlighted');
+                card.style.transform = '';
+                card.style.boxShadow = '';
+            });
+            
+            const targetCard = Array.from(cards).find(card => {
+                const cardIdElement = card.querySelector('.card-id');
+                if (cardIdElement) {
+                    const cardIdText = cardIdElement.textContent.replace('ID: ', '');
+                    return parseInt(cardIdText) === knowledgeId;
+                }
+                return false;
+            });
+            
+            if (targetCard) {
+                targetCard.classList.add('highlighted');
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                setTimeout(() => {
+                    targetCard.classList.remove('highlighted');
+                }, 3000);
+            } else {
+                showToast(`未找到ID为 ${knowledgeId} 的知识卡片，可能不在当前页面`, 'warning');
+            }
+        }
+
         function editKnowledge(id) {
             fetch(`/api/knowledge/${id}`)
                 .then(response => response.json())
@@ -279,7 +1377,7 @@
                     document.getElementById('edit-category').value = data.category || '';
                     document.getElementById('edit-tags').value = ensureArray(data.tags).join(', ');
                     document.getElementById('edit-importance').value = data.importance || 3;
-                    document.getElementById('edit-modal').style.display = 'block';
+                    document.getElementById('edit-modal').classList.add('show');
                 });
         }
 
@@ -293,9 +1391,9 @@
                     if (data.success) {
                         loadKnowledge(currentPage);
                         loadStats();
-                        alert('删除成功');
+                        showToast('删除成功', 'success');
                     } else {
-                        alert('删除失败');
+                        showToast('删除失败', 'error');
                     }
                 });
             }
@@ -303,14 +1401,14 @@
 
         function openDouyinVideo(videoUrl) {
             if (!videoUrl) {
-                alert('没有找到视频链接');
+                showToast('没有找到视频链接', 'warning');
                 return;
             }
             window.open(videoUrl, '_blank');
         }
 
         function closeModal() {
-            document.getElementById('edit-modal').style.display = 'none';
+            document.getElementById('edit-modal').classList.remove('show');
         }
 
         document.getElementById('edit-form').addEventListener('submit', function(e) {
@@ -336,9 +1434,9 @@
                 if (data.success) {
                     closeModal();
                     loadKnowledge(currentPage);
-                    alert('保存成功');
+                    showToast('保存成功', 'success');
                 } else {
-                    alert('保存失败');
+                    showToast('保存失败', 'error');
                 }
             });
         });
@@ -346,13 +1444,13 @@
         function analyzeVideo() {
             const url = document.getElementById('video-url-input').value.trim();
             if (!url) {
-                alert('请输入视频URL');
+                showToast('请输入视频URL', 'warning');
                 return;
             }
 
             const btn = document.getElementById('analyze-btn');
             btn.disabled = true;
-            btn.innerHTML = '<span>⏳ 分析中...</span>';
+            btn.innerHTML = '分析中...';
 
             document.getElementById('progress-section').style.display = 'block';
             updateProgress(0, '正在启动任务...');
@@ -380,11 +1478,11 @@
             .catch(error => {
                 updateProgress(0, '分析失败: ' + error.message);
                 btn.disabled = false;
-                btn.innerHTML = '<span>🎥 开始分析</span>';
+                btn.innerHTML = '开始分析';
                 setTimeout(() => {
                     document.getElementById('progress-section').style.display = 'none';
                 }, 3000);
-                alert('视频分析失败: ' + error.message);
+                showToast('视频分析失败: ' + error.message, 'error');
             });
         }
 
@@ -398,7 +1496,7 @@
                             updateProgress(0, '任务错误: ' + data.error);
                             const btn = document.getElementById('analyze-btn');
                             btn.disabled = false;
-                            btn.innerHTML = '<span>🎥 开始分析</span>';
+                            btn.innerHTML = '开始分析';
                             setTimeout(() => {
                                 document.getElementById('progress-section').style.display = 'none';
                             }, 3000);
@@ -413,22 +1511,22 @@
                                 document.getElementById('progress-section').style.display = 'none';
                                 const btn = document.getElementById('analyze-btn');
                                 btn.disabled = false;
-                                btn.innerHTML = '<span>🎥 开始分析</span>';
+                                btn.innerHTML = '开始分析';
                                 document.getElementById('video-url-input').value = '';
                                 loadKnowledge();
                                 loadStats();
-                                alert(`✅ 视频分析完成！提取了 ${data.result} 个知识点`);
+                                showToast(`视频分析完成！提取了 ${data.result} 个知识点`, 'success');
                             }, 1000);
                         } else if (data.status === 'failed') {
                             clearInterval(pollInterval);
                             updateProgress(0, '任务失败: ' + data.error);
                             const btn = document.getElementById('analyze-btn');
                             btn.disabled = false;
-                            btn.innerHTML = '<span>🎥 开始分析</span>';
+                            btn.innerHTML = '开始分析';
                             setTimeout(() => {
                                 document.getElementById('progress-section').style.display = 'none';
                             }, 3000);
-                            alert('视频分析失败: ' + data.error);
+                            showToast('视频分析失败: ' + data.error, 'error');
                         }
                     })
                     .catch(error => {
@@ -470,6 +1568,47 @@
                 }
             }
             return [];
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (days === 0) return '今天';
+            if (days === 1) return '昨天';
+            if (days < 7) return `${days}天前`;
+            if (days < 30) return `${Math.floor(days / 7)}周前`;
+            return dateStr.split(' ')[0];
+        }
+
+        function refreshCookies() {
+            if (confirm('是否要刷新抖音Cookies？\n\n这将：\n1. 打开浏览器访问抖音\n2. 等待您完成登录（最多1分钟）\n3. 自动保存新的Cookies\n\n请确保您已准备好扫码或手机号登录。')) {
+                const btn = event.target.closest('.nav-link');
+                btn.classList.add('loading');
+                
+                fetch('/api/refresh-cookies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast('刷新失败: ' + data.error, 'error');
+                        btn.classList.remove('loading');
+                    }
+                })
+                .catch(error => {
+                    showToast('请求失败: ' + error.message, 'error');
+                    btn.classList.remove('loading');
+                });
+            }
         }
     </script>
 </body>
