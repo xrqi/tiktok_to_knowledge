@@ -9,7 +9,7 @@
   "ai": {
     "provider": "deepseek",
     "model": "deepseek-chat",
-    "api_key": "sk-c6e80ce9dd414036afc8827868aa9a6f",
+    "api_key": "",
     "temperature": 0.3,
     "max_tokens": 4000,
     "chunk_size": 1000
